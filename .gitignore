@@ -1,9 +1,12 @@
 # Terraform
 .terraform/
 
-# State files
+# Terraform state
 *.tfstate
 *.tfstate.*
+
+# IDE files
+.idea/
 
 # Secrets
 *.pem
