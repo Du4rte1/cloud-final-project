@@ -1,0 +1,18 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: order-service
+
+aws:
+  region: eu-west-1
+
+sqs:
+  queue-url: https://sqs.eu-west-1.amazonaws.com/366339682308/cloud-project-orders
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

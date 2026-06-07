@@ -11,3 +11,14 @@
 # Secrets
 *.pem
 .env
+
+# Maven
+target/
+
+# Build artifacts
+*.jar
+*.jar.original
+*.class
+
+# Docker exports
+*.tar

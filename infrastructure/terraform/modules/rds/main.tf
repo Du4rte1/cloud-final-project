@@ -44,7 +44,7 @@ resource "aws_db_instance" "postgres" {
 
   db_name  = "cloudproject"
   username = "postgres"
-  password = "CloudProject123!"
+  password = "Cloud123!"
 
   publicly_accessible = false
 

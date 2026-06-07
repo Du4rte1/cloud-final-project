@@ -1,0 +1,9 @@
+  spring:
+    application:
+      name: notification-service
+
+  aws:
+    region: eu-west-1
+
+  sqs:
+    queue-url: https://sqs.eu-west-1.amazonaws.com/366339682308/cloud-project-orders
