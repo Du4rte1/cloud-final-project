@@ -52,47 +52,34 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
 
+
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ secrets.EC2_HOST }} << EOF
           
-          mkdir -p ~/cloud-final-project
-          cd ~/cloud-final-project
+          docker pull duartee/catalog-service:latest
+          docker pull duartee/order-service:latest
+          docker pull duartee/notification-service:latest
           
-          cat > .env << ENVFILE
-          DB_URL=${{ secrets.DB_URL }}
-          DB_USERNAME=${{ secrets.DB_USERNAME }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          ENVFILE
+          docker rm -f catalog-service || true
+          docker rm -f order-service || true
+          docker rm -f notification-service || true
           
-          cat > docker-compose.yml << COMPOSE
-          services:
+          docker run -d \
+            --name catalog-service \
+            -p 8081:8081 \
+            -e DB_URL="${{ secrets.DB_URL }}" \
+            -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
+            -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            duartee/catalog-service:latest
           
-            catalog-service:
-              image: duartee/catalog-service:latest
-              container_name: catalog-service
-              restart: unless-stopped
-              ports:
-                - "8081:8081"
-              environment:
-                DB_URL: \${DB_URL}
-                DB_USERNAME: \${DB_USERNAME}
-                DB_PASSWORD: \${DB_PASSWORD}
+          docker run -d \
+            --name order-service \
+            -p 8082:8082 \
+            duartee/order-service:latest
           
-            order-service:
-              image: duartee/order-service:latest
-              container_name: order-service
-              restart: unless-stopped
-              ports:
-                - "8082:8082"
-          
-            notification-service:
-              image: duartee/notification-service:latest
-              container_name: notification-service
-              restart: unless-stopped
-          COMPOSE
-          
-          docker compose pull
-          docker compose up -d
+          docker run -d \
+            --name notification-service \
+            duartee/notification-service:latest
           
           EOF
