@@ -1,0 +1,98 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: eu-west-1
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Catalog Service
+        run: |
+          docker build -t duartee/catalog-service:latest ./services/catalog-service
+
+      - name: Build Order Service
+        run: |
+          docker build -t duartee/order-service:latest ./services/order-service
+
+      - name: Build Notification Service
+        run: |
+          docker build -t duartee/notification-service:latest ./services/notification-service
+
+      - name: Push Images
+        run: |
+          docker push duartee/catalog-service:latest
+          docker push duartee/order-service:latest
+          docker push duartee/notification-service:latest
+
+      - name: Create SSH Key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+          
+          mkdir -p ~/cloud-final-project
+          cd ~/cloud-final-project
+          
+          cat > .env << ENVFILE
+          DB_URL=${{ secrets.DB_URL }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          ENVFILE
+          
+          cat > docker-compose.yml << COMPOSE
+          services:
+          
+            catalog-service:
+              image: duartee/catalog-service:latest
+              container_name: catalog-service
+              restart: unless-stopped
+              ports:
+                - "8081:8081"
+              environment:
+                DB_URL: \${DB_URL}
+                DB_USERNAME: \${DB_USERNAME}
+                DB_PASSWORD: \${DB_PASSWORD}
+          
+            order-service:
+              image: duartee/order-service:latest
+              container_name: order-service
+              restart: unless-stopped
+              ports:
+                - "8082:8082"
+          
+            notification-service:
+              image: duartee/notification-service:latest
+              container_name: notification-service
+              restart: unless-stopped
+          COMPOSE
+          
+          docker compose pull
+          docker compose up -d
+          
+          EOF
