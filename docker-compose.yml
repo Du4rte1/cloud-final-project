@@ -1,20 +1,23 @@
 services:
-
   catalog-service:
-    image: duartee/catalog-service:latest
+    image: duartee/catalog-service
     container_name: catalog-service
     restart: unless-stopped
     ports:
       - "8081:8081"
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
 
   order-service:
-    image: duartee/order-service:latest
+    image: duartee/order-service
     container_name: order-service
     restart: unless-stopped
     ports:
       - "8082:8082"
 
   notification-service:
-    image: duartee/notification-service:latest
+    image: duartee/notification-service
     container_name: notification-service
     restart: unless-stopped
